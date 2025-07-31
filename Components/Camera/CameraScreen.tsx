@@ -8,6 +8,7 @@ import {
   Dimensions,
   StatusBar
 } from 'react-native';
+import Slider from '@react-native-community/slider';
 import { CameraView, CameraType, FlashMode, useCameraPermissions } from 'expo-camera';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import CameraPermissions from './CameraPermissions';
@@ -25,6 +26,7 @@ function CameraScreen({ onClose, onPhotoSaved }: CameraScreenProps) {
   const [cameraType, setCameraType] = useState<CameraType>('back');
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(0);
   const [isCapturing, setIsCapturing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
 
@@ -147,6 +149,7 @@ function CameraScreen({ onClose, onPhotoSaved }: CameraScreenProps) {
         facing={cameraType}
         flash={flashMode}
         mode="picture"
+        zoom={zoom}
       >
         {/* Header with close button */}
         <View style={styles.header}>
@@ -196,6 +199,20 @@ function CameraScreen({ onClose, onPhotoSaved }: CameraScreenProps) {
                 )}
               </View>
             </TouchableOpacity>
+          </View>
+          {/* Zoom slider */}
+          <View style={styles.zoomSliderContainer}>
+            <Text style={styles.zoomLabel}>Zoom</Text>
+            <Slider
+              style={styles.zoomSlider}
+              minimumValue={0}
+              maximumValue={2}
+              value={zoom}
+              onValueChange={setZoom}
+              minimumTrackTintColor="#8B45C3"
+              maximumTrackTintColor="#fff"
+              thumbTintColor="#8B45C3"
+            />
           </View>
         </View>
       </CameraView>
@@ -347,6 +364,21 @@ const styles = StyleSheet.create({
   },
   capturingText: {
     fontSize: 24,
+  },
+  zoomSliderContainer: {
+    width: '80%',
+    alignSelf: 'center',
+    marginTop: 20,
+  },
+  zoomLabel: {
+    color: 'white',
+    fontSize: 14,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  zoomSlider: {
+    width: '100%',
+    height: 40,
   },
 }); 
 export default CameraScreen;

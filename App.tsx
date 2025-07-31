@@ -13,12 +13,14 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+
 // Import React Navigation components
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Import your new screen (assuming it's in the same folder as App.tsx)
-import ClosetScreen from './ClosetScreen'; // <--- IMPORTANT: Changed from './src/screens/ClosetScreen'
+import ClosetScreen from './screens/ClosetScreen';
+import CameraScreen from './Components/Camera/CameraScreen';
 
 const { width: screenWidth } = Dimensions.get('window');
 import type { ColorValue } from 'react-native';
@@ -182,6 +184,7 @@ const Carousel: React.FC<{ data: CarouselItem[] }> = ({ data }) => {
 const Stack = createNativeStackNavigator();
 
 const HomeScreen: React.FC = () => {
+  const navigation = useNavigation();
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F7F5" />
@@ -194,12 +197,20 @@ const HomeScreen: React.FC = () => {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.mainContent}>
           <View style={styles.section}>
-            <Carousel data={carouselData} />
-          </View>
-
-          <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
             <View style={styles.actionGrid}>
+              <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Camera' as never)}>
+                <Text style={styles.actionEmoji}>📷</Text>
+                <Text style={styles.actionTitle}>Camera</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Closet' as never)}>
+                <Text style={styles.actionEmoji}>👗</Text>
+                <Text style={styles.actionTitle}>View Closet</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionCard}>
+                <Text style={styles.actionEmoji}>🌙</Text>
+                <Text style={styles.actionTitle}>Date Night</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.actionCard}>
                 <Text style={styles.actionEmoji}>🌙</Text>
                 <Text style={styles.actionTitle}>Date Night</Text>
@@ -262,6 +273,21 @@ const App: React.FC = () => {
             },
             // Removed invalid property 'headerBackTitleVisible'
           }}
+        />
+        <Stack.Screen
+          name="Camera"
+          options={{
+            headerTitle: 'Camera',
+            headerStyle: { backgroundColor: '#F8F7F5' },
+            headerTintColor: '#4A4845',
+            headerTitleStyle: { fontWeight: 'bold' },
+          }}
+          children={({ navigation }) => (
+            <CameraScreen
+              onClose={() => navigation.goBack()}
+              onPhotoSaved={() => {}}
+            />
+          )}
         />
       </Stack.Navigator>
     </NavigationContainer>

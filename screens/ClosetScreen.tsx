@@ -5,7 +5,6 @@ import { Text, StyleSheet, View } from 'react-native'; // Keeping these imports,
 // Import the tab content screens (assuming they are in the same folder)
 import GarmentsTab from './GarmentsTab';
 import OutfitsTab from './OutfitsTab';
-
 const Tab = createBottomTabNavigator();
 
 const ClosetScreen: React.FC = () => {

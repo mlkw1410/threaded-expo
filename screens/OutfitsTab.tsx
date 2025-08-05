@@ -1,38 +1,78 @@
-
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, Image, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  FlatList, 
+  Image, 
+  Dimensions,
+  ActivityIndicator,
+  Alert
+} from 'react-native';
+import { supabase } from '../lib/supabase';
+import { getOutfitsWithGarments } from '../lib/databaseFunctions';
+import { OutfitWithGarments } from '../types/database';
 
 const { width } = Dimensions.get('window');
-const ITEM_WIDTH = (width - 60) / 2; // 2 items per row with padding
-
-// Dummy data for outfits - replace with generated outfits later
-const dummyOutfits = [
-  { id: '1', name: 'Casual Weekend', image: 'https://via.placeholder.com/150/FFB6C1/000000?text=Outfit+1' },
-  { id: '2', name: 'Work Chic', image: 'https://via.placeholder.com/150/87CEEB/000000?text=Outfit+2' },
-  { id: '3', name: 'Evening Glam', image: 'https://via.placeholder.com/150/DA70D6/000000?text=Outfit+3' },
-  { id: '4', name: 'Sporty Look', image: 'https://via.placeholder.com/150/32CD32/000000?text=Outfit+4' },
-];
+const ITEM_WIDTH = (width - 40) / 2; // Adjusted for padding in container
 
 const OutfitsTab: React.FC = () => {
-  const renderOutfitItem = ({ item }: { item: { id: string; name: string; image: string } }) => (
+  const [outfits, setOutfits] = useState<OutfitWithGarments[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadOutfits = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("You must be logged in to view outfits.");
+
+        // Use our new "smart" function
+        const result = await getOutfitsWithGarments(user.id);
+
+        if (result.success && result.data) {
+          setOutfits(result.data);
+        } else {
+          throw result.error || new Error("Failed to load outfits.");
+        }
+      } catch (error: any) {
+        Alert.alert('Error', error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadOutfits();
+  }, []);
+
+  const renderOutfitItem = ({ item }: { item: OutfitWithGarments }) => (
     <View style={styles.outfitItem}>
-      <Image source={{ uri: item.image }} style={styles.outfitImage} />
+      {/* We'll use the first garment's image as the outfit preview */}
+      <Image 
+        source={{ uri: item.garments[0]?.image_url || 'https://via.placeholder.com/150' }} 
+        style={styles.outfitImage} 
+      />
       <Text style={styles.outfitName}>{item.name}</Text>
     </View>
   );
 
+  if (loading) {
+    return <ActivityIndicator size="large" style={{ flex: 1, justifyContent: 'center' }} />;
+  }
+
   return (
     <View style={styles.container}>
-      {dummyOutfits.length > 0 ? (
+      {outfits.length > 0 ? (
         <FlatList
-          data={dummyOutfits}
+          data={outfits}
           renderItem={renderOutfitItem}
           keyExtractor={(item) => item.id}
           numColumns={2}
           contentContainerStyle={styles.listContainer}
         />
       ) : (
-        <Text style={styles.emptyText}>No outfits generated yet. Choose your mood to create one!</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={styles.emptyText}>No outfits created yet!</Text>
+        </View>
       )}
     </View>
   );
@@ -64,10 +104,10 @@ const styles = StyleSheet.create({
   },
   outfitImage: {
     width: '100%',
-    height: ITEM_WIDTH, // Make image square
+    height: ITEM_WIDTH,
     borderRadius: 8,
     marginBottom: 8,
-    backgroundColor: '#E8E5E1', // Placeholder background
+    backgroundColor: '#E8E5E1',
   },
   outfitName: {
     fontSize: 14,

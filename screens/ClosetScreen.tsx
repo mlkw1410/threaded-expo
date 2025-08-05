@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, StyleSheet, View } from 'react-native'; // Keeping these imports, though not strictly used in this file's direct render
+import { Text, StyleSheet, View } from 'react-native'; 
 
 // Import the tab content screens (assuming they are in the same folder)
 import GarmentsTab from './GarmentsTab';
@@ -10,7 +10,6 @@ const Tab = createBottomTabNavigator();
 const ClosetScreen: React.FC = () => {
   return (
     <Tab.Navigator
-      // Removed swipeEnabled and tabBarIndicatorStyle as they are not valid props for BottomTabNavigator
       screenOptions={{
         headerShown: false, // Hide header as Stack.Navigator in App.tsx handles it
         tabBarActiveTintColor: '#4A4845', // Active tab color

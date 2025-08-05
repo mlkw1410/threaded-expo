@@ -19,8 +19,11 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Import your new screen (assuming it's in the same folder as App.tsx)
+
 import ClosetScreen from './screens/ClosetScreen';
 import CameraScreen from './Components/Camera/CameraScreen';
+import AuthScreen from './Components/Auth/AuthScreen';
+import { supabase } from './lib/supabase';
 
 const { width: screenWidth } = Dimensions.get('window');
 import type { ColorValue } from 'react-native';
@@ -183,8 +186,18 @@ const Carousel: React.FC<{ data: CarouselItem[] }> = ({ data }) => {
 
 const Stack = createNativeStackNavigator();
 
+import { useState as useStateReact, useRef as useRefReact } from 'react';
+
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
+  const [menuVisible, setMenuVisible] = useStateReact(false);
+  const menuButtonRef = useRefReact(null);
+
+  const handleLogout = async () => {
+    setMenuVisible(false);
+    await supabase.auth.signOut();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F7F5" />
@@ -192,6 +205,21 @@ const HomeScreen: React.FC = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Threaded</Text>
         <Text style={styles.headerSubtitle}>Your Digital Closet</Text>
+        <TouchableOpacity
+          ref={menuButtonRef}
+          style={styles.moreButton}
+          onPress={() => setMenuVisible((v) => !v)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={styles.moreButtonText}>⋮</Text>
+        </TouchableOpacity>
+        {menuVisible && (
+          <View style={styles.menuDropdown}>
+            <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+              <Text style={styles.menuItemText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -250,7 +278,41 @@ const HomeScreen: React.FC = () => {
 };
 
 
+
 const App: React.FC = () => {
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const getSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (!error) setSession(data.session);
+      setLoading(false);
+    };
+    getSession();
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F3F0' }}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (!session) {
+    return <AuthScreen onAuthSuccess={async () => {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
+    }} />;
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
@@ -271,7 +333,6 @@ const App: React.FC = () => {
             headerTitleStyle: {
               fontWeight: 'bold',
             },
-            // Removed invalid property 'headerBackTitleVisible'
           }}
         />
         <Stack.Screen
@@ -307,6 +368,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E8E5E1',
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    position: 'relative',
   },
   headerTitle: {
     fontSize: 28,
@@ -319,6 +383,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#7A7672',
     textAlign: 'center',
+    flex: 1,
+  },
+  moreButton: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    padding: 8,
+    zIndex: 10,
+  },
+  moreButtonText: {
+    fontSize: 24,
+    color: '#4A4845',
+    fontWeight: 'bold',
+  },
+  menuDropdown: {
+    position: 'absolute',
+    right: 10,
+    top: 48,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    minWidth: 120,
+    zIndex: 20,
+  },
+  menuItem: {
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EFEDEA',
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: '#4A4845',
   },
   scrollView: {
     flex: 1,

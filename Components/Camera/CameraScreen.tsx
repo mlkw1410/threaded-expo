@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import * as FileSystem from 'expo-file-system';
 import { 
   View, 
   Text, 
   TouchableOpacity, 
   StyleSheet, 
   Alert,
-  Dimensions,
   StatusBar
 } from 'react-native';
-import Slider from '@react-native-community/slider';
 import { CameraView, CameraType, FlashMode, useCameraPermissions } from 'expo-camera';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import CameraPermissions from './CameraPermissions';
@@ -19,14 +19,12 @@ interface CameraScreenProps {
   onPhotoSaved: (photoUri: string) => void;
 }
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
 function CameraScreen({ onClose, onPhotoSaved }: CameraScreenProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraType, setCameraType] = useState<CameraType>('back');
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(0);
+  const [zoom, setZoom] = useState(0); // 0 = 1x, 0.5 = 2x
   const [isCapturing, setIsCapturing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
 
@@ -61,6 +59,10 @@ function CameraScreen({ onClose, onPhotoSaved }: CameraScreenProps) {
     });
   };
 
+  const toggleZoom = () => {
+    setZoom(current => current === 0 ? 0.1 : 0);
+  };
+
   const getFlashIcon = () => {
     switch (flashMode) {
       case 'on':
@@ -72,6 +74,10 @@ function CameraScreen({ onClose, onPhotoSaved }: CameraScreenProps) {
       default:
         return 'flash-off';
     }
+  };
+
+  const getZoomText = () => {
+    return zoom === 0 ? '1x' : '2x';
   };
 
   const takePicture = async () => {
@@ -99,16 +105,95 @@ function CameraScreen({ onClose, onPhotoSaved }: CameraScreenProps) {
     setCapturedPhoto(null);
   };
 
-  const handleSave = (photoUri: string) => {
-    onPhotoSaved(photoUri);
-    onClose();
+  const handleSave = async (photoUri: string) => {
+    try {
+      // 1. Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        Alert.alert('Error', 'Could not get user info.');
+        return;
+      }
+      const authId = user.id;
+
+      // 2. Get filename from URI
+      const filename = photoUri.split('/').pop() || `photo_${Date.now()}.jpg`;
+      const filePath = `${authId}/${filename}`;
+
+      // Method 1: Using ArrayBuffer (Recommended)
+      const fileInfo = await FileSystem.getInfoAsync(photoUri);
+      if (!fileInfo.exists) {
+        Alert.alert('Error', 'Photo file not found.');
+        return;
+      }
+
+      // Read file as binary data
+      const fileData = await FileSystem.readAsStringAsync(photoUri, { 
+        encoding: FileSystem.EncodingType.Base64 
+      });
+
+      // Convert base64 to ArrayBuffer
+      const binaryString = atob(fileData);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Upload using ArrayBuffer
+      const { error: uploadError } = await supabase.storage
+        .from('garments')
+        .upload(filePath, bytes.buffer, {
+          contentType: 'image/jpeg',
+          upsert: true,
+          cacheControl: '3600',
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        Alert.alert('Upload Error', uploadError.message);
+        return;
+      }
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('garments')
+        .getPublicUrl(filePath);
+      
+      const publicUrl = publicUrlData?.publicUrl || '';
+
+      // Insert garment into database (using placeholder values for now)
+      const { error: insertError } = await supabase
+        .from('garments')
+        .insert([
+          {
+            user_id: authId,
+            name: 'New Garment', // TODO: prompt user for real values
+            category: 'Other',
+            colour: 'Unknown',
+            brand: '',
+            image_url: publicUrl,
+            notes: '',
+            // created_at will default to now()
+          }
+        ]);
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        Alert.alert('Database Error', insertError.message);
+        return;
+      }
+
+      onPhotoSaved(publicUrl);
+      onClose();
+    } catch (err) {
+      console.error('Error uploading photo:', err);
+      Alert.alert('Error', 'Failed to upload photo.');
+    }
   };
+
 
   const handleCancel = () => {
     setCapturedPhoto(null);
   };
 
-  // Show permissions screen if not granted
   if (!permission) {
     return (
       <View style={styles.container}>
@@ -126,7 +211,6 @@ function CameraScreen({ onClose, onPhotoSaved }: CameraScreenProps) {
     );
   }
 
-  // Show photo preview if photo was captured
   if (capturedPhoto) {
     return (
       <PhotoPreview
@@ -150,72 +234,55 @@ function CameraScreen({ onClose, onPhotoSaved }: CameraScreenProps) {
         flash={flashMode}
         mode="picture"
         zoom={zoom}
-      >
-        {/* Header with close button */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={30} color="white" />
+      />
+
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Ionicons name="close" size={30} color="white" />
+        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <View style={styles.topControls}>
+        <TouchableOpacity onPress={toggleFlashMode} style={styles.controlButton}>
+          <Ionicons name={getFlashIcon()} size={24} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={toggleCameraType} style={styles.controlButton}>
+          <Ionicons name="camera-reverse" size={24} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={toggleZoom} style={styles.controlButton}>
+          <Text style={styles.zoomButtonText}>{getZoomText()}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.frameGuide}>
+        <View style={styles.frameCorner} />
+        <View style={[styles.frameCorner, styles.frameCornerTopRight]} />
+        <View style={[styles.frameCorner, styles.frameCornerBottomLeft]} />
+        <View style={[styles.frameCorner, styles.frameCornerBottomRight]} />
+      </View>
+
+      <View style={styles.instructionsContainer}>
+        <Text style={styles.instructionsText}>
+          Position your clothing item within the frame
+        </Text>
+      </View>
+
+      <View style={styles.bottomControls}>
+        <View style={styles.captureButtonContainer}>
+          <TouchableOpacity
+            style={[styles.captureButton, isCapturing && styles.captureButtonDisabled]}
+            onPress={takePicture}
+            disabled={isCapturing}
+          >
+            <View style={styles.captureButtonInner}>
+              {isCapturing && (
+                <Text style={styles.capturingText}>📸</Text>
+              )}
+            </View>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Item</Text>
-          <View style={styles.headerSpacer} />
         </View>
-
-        {/* Camera controls */}
-        <View style={styles.topControls}>
-          <TouchableOpacity onPress={toggleFlashMode} style={styles.controlButton}>
-            <Ionicons name={getFlashIcon()} size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={toggleCameraType} style={styles.controlButton}>
-            <Ionicons name="camera-reverse" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Frame guide */}
-        <View style={styles.frameGuide}>
-          <View style={styles.frameCorner} />
-          <View style={[styles.frameCorner, styles.frameCornerTopRight]} />
-          <View style={[styles.frameCorner, styles.frameCornerBottomLeft]} />
-          <View style={[styles.frameCorner, styles.frameCornerBottomRight]} />
-        </View>
-
-        {/* Instructions */}
-        <View style={styles.instructionsContainer}>
-          <Text style={styles.instructionsText}>
-            Position your clothing item within the frame
-          </Text>
-        </View>
-
-        {/* Bottom controls */}
-        <View style={styles.bottomControls}>
-          <View style={styles.captureButtonContainer}>
-            <TouchableOpacity
-              style={[styles.captureButton, isCapturing && styles.captureButtonDisabled]}
-              onPress={takePicture}
-              disabled={isCapturing}
-            >
-              <View style={styles.captureButtonInner}>
-                {isCapturing && (
-                  <Text style={styles.capturingText}>📸</Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          </View>
-          {/* Zoom slider */}
-          <View style={styles.zoomSliderContainer}>
-            <Text style={styles.zoomLabel}>Zoom</Text>
-            <Slider
-              style={styles.zoomSlider}
-              minimumValue={0}
-              maximumValue={2}
-              value={zoom}
-              onValueChange={setZoom}
-              minimumTrackTintColor="#8B45C3"
-              maximumTrackTintColor="#fff"
-              thumbTintColor="#8B45C3"
-            />
-          </View>
-        </View>
-      </CameraView>
+      </View>
     </View>
   );
 }
@@ -267,6 +334,13 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 50,
+    minHeight: 50,
+  },
+  zoomButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
   frameGuide: {
     position: 'absolute',
@@ -365,20 +439,6 @@ const styles = StyleSheet.create({
   capturingText: {
     fontSize: 24,
   },
-  zoomSliderContainer: {
-    width: '80%',
-    alignSelf: 'center',
-    marginTop: 20,
-  },
-  zoomLabel: {
-    color: 'white',
-    fontSize: 14,
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  zoomSlider: {
-    width: '100%',
-    height: 40,
-  },
 }); 
-export default CameraScreen;
+
+export default CameraScreen

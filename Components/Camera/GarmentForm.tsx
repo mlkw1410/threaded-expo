@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
+  Image,
+  Dimensions,
 } from 'react-native';
+
+const { width } = Dimensions.get('window');
 
 interface GarmentFormProps {
   onSubmit: (garmentDetails: {
@@ -19,14 +20,31 @@ interface GarmentFormProps {
     notes: string;
   }) => void;
   onCancel: () => void;
+  photoUri: string;
 }
 
-export function GarmentForm({ onSubmit, onCancel }: GarmentFormProps) {
+export const GarmentForm = forwardRef(({ onSubmit, onCancel, photoUri }: GarmentFormProps, ref) => {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [colour, setColour] = useState('');
   const [brand, setBrand] = useState('');
   const [notes, setNotes] = useState('');
+
+  useImperativeHandle(ref, () => ({
+    handleSubmit: () => {
+      if (!name || !category || !colour) {
+        // TODO: Show validation error
+        return;
+      }
+      onSubmit({
+        name,
+        category,
+        colour,
+        brand,
+        notes,
+      });
+    }
+  }));
 
   const handleSubmit = () => {
     if (!name || !category || !colour) {
@@ -43,16 +61,15 @@ export function GarmentForm({ onSubmit, onCancel }: GarmentFormProps) {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <View style={styles.header}>
-        <View style={styles.handleBar} />
-        <Text style={styles.headerTitle}>Add Garment Details</Text>
-      </View>
-
-      <ScrollView style={styles.form}>
+    <View style={styles.container}>
+      <ScrollView 
+        style={styles.form}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.photoContainer}>
+          <Image source={{ uri: photoUri }} style={styles.photo} />
+        </View>
+        
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Name*</Text>
           <TextInput
@@ -109,53 +126,31 @@ export function GarmentForm({ onSubmit, onCancel }: GarmentFormProps) {
             numberOfLines={4}
           />
         </View>
+        
+        {/* Add padding at the bottom to ensure the last input is visible with keyboard */}
+        <View style={{ height: 100 }} />
       </ScrollView>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.button, styles.cancelButton]}
-          onPress={onCancel}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.button, styles.submitButton]}
-          onPress={handleSubmit}
-        >
-          <Text style={styles.submitButtonText}>Save</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+    </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAF9F8',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  header: {
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EFEDEA',
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#E8E5E1',
-    borderRadius: 2,
-    marginBottom: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#4A4845',
   },
   form: {
     padding: 20,
+  },
+  photoContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  photo: {
+    width: width * 0.5,
+    height: width * 0.5 * 1.33,
+    borderRadius: 12,
+    resizeMode: 'cover',
   },
   inputGroup: {
     marginBottom: 20,
@@ -179,37 +174,6 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: 'top',
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#EFEDEA',
-  },
-  button: {
-    flex: 1,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#FAF9F8',
-    borderWidth: 1,
-    borderColor: '#EFEDEA',
-    marginRight: 8,
-  },
-  submitButton: {
-    backgroundColor: '#8B45C3',
-    marginLeft: 8,
-  },
-  cancelButtonText: {
-    color: '#4A4845',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
 });
+
+export default GarmentForm;

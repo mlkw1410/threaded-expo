@@ -1,22 +1,29 @@
 import React from 'react';
-import { View, Image, StyleSheet, TouchableOpacity, Text, Dimensions } from 'react-native';
+import { View, Image, StyleSheet, TouchableOpacity, Text, Dimensions, ImageStyle, ViewStyle } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type NavigationProp = NativeStackNavigationProp<{
+  AddGarment: { photoUri: string };
+}, 'AddGarment'>;
 
 interface PhotoPreviewProps {
   photoUri: string;
-  onRetake: () => void;
-  onSave: (uri: string) => void;
   onCancel: () => void;
+  onRetake: () => void;
 }
 
 const { width, height } = Dimensions.get('window');
+const DRAWER_HEIGHT = height * 0.7;
 
-const PhotoPreview: React.FC<PhotoPreviewProps> = ({
-  photoUri,
-  onRetake,
-  onSave,
-  onCancel,
-}) => {
+function PhotoPreview({ photoUri, onRetake, onCancel }: PhotoPreviewProps) {
+  const navigation = useNavigation<NavigationProp>();
+
+  const handleNext = () => {
+    navigation.navigate('AddGarment', { photoUri });
+  }; 
+
   return (
     <View style={styles.container}>
       {/* Photo Display */}
@@ -24,26 +31,21 @@ const PhotoPreview: React.FC<PhotoPreviewProps> = ({
         <Image source={{ uri: photoUri }} style={styles.photo} />
       </View>
 
-      {/* Action Buttons */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.actionButton} onPress={onCancel}>
-          <Ionicons name="close" size={24} color="#FFFFFF" />
-          <Text style={styles.buttonText}>Cancel</Text>
-        </TouchableOpacity>
+      {/* Cancel Button */}
+      <TouchableOpacity 
+        style={styles.cancelButton} 
+        onPress={onCancel}
+      >
+        <Ionicons name="close" size={24} color="#FFFFFF" />
+      </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton} onPress={onRetake}>
-          <Ionicons name="camera" size={24} color="#FFFFFF" />
-          <Text style={styles.buttonText}>Retake</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.saveButton]} 
-          onPress={() => onSave(photoUri)}
-        >
-          <Ionicons name="checkmark" size={24} color="#FFFFFF" />
-          <Text style={styles.buttonText}>Save</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Next Button */}
+      <TouchableOpacity 
+        style={styles.nextButton} 
+        onPress={handleNext}
+      >
+        <Text style={styles.nextButtonText}>Next</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -52,46 +54,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
-  },
+  } as ViewStyle,
   photoContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
-  },
+  } as ViewStyle,
   photo: {
     width: width - 40,
     height: (width - 40) * 1.33, // 4:3 aspect ratio
     borderRadius: 12,
     resizeMode: 'cover',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 60,
-    paddingTop: 40,
-  },
-  actionButton: {
-    alignItems: 'center',
+  } as ImageStyle,
+  cancelButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
-    padding: 16,
-    borderRadius: 50,
-    backgroundColor: '#333333',
-    minWidth: 80,
-  },
-  saveButton: {
-    backgroundColor: '#8B5CF6', // Purple accent matching your brand
-  },
-  buttonText: {
+    alignItems: 'center',
+  } as ViewStyle,
+  nextButton: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    right: 20,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#8B45C3',
+    justifyContent: 'center',
+    alignItems: 'center',
+  } as ViewStyle,
+  nextButtonText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '600',
-    marginTop: 4,
   },
 });
+
 
 export default PhotoPreview;
 

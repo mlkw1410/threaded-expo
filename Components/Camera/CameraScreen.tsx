@@ -105,7 +105,16 @@ function CameraScreen({ onClose, onPhotoSaved }: CameraScreenProps) {
     setCapturedPhoto(null);
   };
 
-  const handleSave = async (photoUri: string) => {
+  const handleSave = async (
+    photoUri: string,
+    garmentDetails: {
+      name: string;
+      category: string;
+      colour: string;
+      brand: string;
+      notes: string;
+    }
+  ) => {
     try {
       // 1. Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -160,18 +169,18 @@ function CameraScreen({ onClose, onPhotoSaved }: CameraScreenProps) {
       
       const publicUrl = publicUrlData?.publicUrl || '';
 
-      // Insert garment into database (using placeholder values for now)
+      // Insert garment into database with user-provided details
       const { error: insertError } = await supabase
         .from('garments')
         .insert([
           {
             user_id: authId,
-            name: 'New Garment', // TODO: prompt user for real values
-            category: 'Other',
-            colour: 'Unknown',
-            brand: '',
+            name: garmentDetails.name,
+            category: garmentDetails.category,
+            colour: garmentDetails.colour,
+            brand: garmentDetails.brand || null,
             image_url: publicUrl,
-            notes: '',
+            notes: garmentDetails.notes || null,
             // created_at will default to now()
           }
         ]);
@@ -217,7 +226,6 @@ function CameraScreen({ onClose, onPhotoSaved }: CameraScreenProps) {
         photoUri={capturedPhoto}
         onCancel={handleCancel}
         onRetake={handleRetake}
-        onSave={handleSave}
       />
     );
   }

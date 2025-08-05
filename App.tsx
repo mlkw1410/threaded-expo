@@ -18,11 +18,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+type RootStackParamList = {
+  Home: undefined;
+  Closet: undefined;
+  Camera: undefined;
+  Auth: undefined;
+  AddGarment: { photoUri: string };
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
 // Import your new screen (assuming it's in the same folder as App.tsx)
 
 import ClosetScreen from './screens/ClosetScreen';
 import CameraScreen from './Components/Camera/CameraScreen';
 import AuthScreen from './Components/Auth/AuthScreen';
+import AddGarmentScreen from './screens/AddGarmentScreen';
 import { supabase } from './lib/supabase';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -184,7 +195,6 @@ const Carousel: React.FC<{ data: CarouselItem[] }> = ({ data }) => {
 };
 
 
-const Stack = createNativeStackNavigator();
 
 import { useState as useStateReact, useRef as useRefReact } from 'react';
 
@@ -349,6 +359,13 @@ const App: React.FC = () => {
               onPhotoSaved={() => {}}
             />
           )}
+        />
+        <Stack.Screen
+          name="AddGarment"
+          component={AddGarmentScreen}
+          options={{
+            headerShown: false
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -3,6 +3,10 @@ import { User, Garment, Outfit,  OutfitWithGarments, DatabaseResponse } from '..
 
 // ===== USER FUNCTIONS =====
 export const createUser = async (email: string, fullName: string): Promise<DatabaseResponse<User[]>> => {
+  if (!email || !fullName) {
+    return { success: false, error: new Error("Email and full name are required") };
+  }
+  console.log('Creating user:', { email, fullName });
   try {
     const { data, error } = await supabase
       .from('users')

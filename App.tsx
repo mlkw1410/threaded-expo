@@ -18,6 +18,7 @@ type RootStackParamList = {
   Camera: undefined;
   Auth: undefined;
   AddGarment: { photoUri: string };
+  VirtualTryOn: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -27,6 +28,7 @@ import ClosetScreen from './screens/ClosetScreen';
 import CameraScreen from './Components/Camera/CameraScreen';
 import AuthScreen from './Components/Auth/AuthScreen';
 import AddGarmentScreen from './screens/AddGarmentScreen';
+import VirtualTryOnScreen from './screens/VirtualTryOnScreen';
 import { supabase } from './lib/supabase';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -97,26 +99,13 @@ const HomeScreen: React.FC = () => {
                 <Text style={styles.actionEmoji}>🥐</Text>
                 <Text style={styles.actionTitle}>Weekend Brunch</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('VirtualTryOn' as never)}>
+                <Text style={styles.actionEmoji}>👕</Text>
+                <Text style={styles.actionTitle}>Virtual Try-On</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
-            <View style={styles.activityList}>
-              <View style={styles.activityItem}>
-                <Text style={styles.activityText}>Added new shirt to closet</Text>
-                <Text style={styles.activityTime}>2 hours ago</Text>
-              </View>
-              <View style={styles.activityItem}>
-                <Text style={styles.activityText}>Created "Summer Vibes" outfit</Text>
-                <Text style={styles.activityTime}>Yesterday</Text>
-              </View>
-              <View style={styles.activityItem}>
-                <Text style={styles.activityText}>Shared outfit with friends</Text>
-                <Text style={styles.activityTime}>3 days ago</Text>
-              </View>
-            </View>
-          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -201,6 +190,20 @@ const App: React.FC = () => {
           component={AddGarmentScreen}
           options={{
             headerShown: false
+          }}
+        />
+        <Stack.Screen
+          name="VirtualTryOn"
+          component={VirtualTryOnScreen}
+          options={{
+            headerTitle: 'Virtual Try-On',
+            headerStyle: {
+              backgroundColor: '#F8F7F5',
+            },
+            headerTintColor: '#4A4845',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
           }}
         />
       </Stack.Navigator>
@@ -399,35 +402,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#4A4845',
     textAlign: 'center',
-  },
-  activityList: {
-    backgroundColor: '#FAF9F8',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#5A5856',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#EFEDEA',
-  },
-  activityItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0EFEC',
-  },
-  activityText: {
-    fontSize: 14,
-    color: '#4A4845',
-    flex: 1,
-  },
-  activityTime: {
-    fontSize: 12,
-    color: '#7A7672',
   },
 });
 

@@ -28,6 +28,11 @@ const AuthScreen: React.FC<{ onAuthSuccess: () => void }> = ({ onAuthSuccess }) 
     }
   };
 
+  const handleClearCache = async () => {
+    await supabase.auth.signOut();
+    Alert.alert('Cache Cleared', 'Please try logging in again.');
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{isLogin ? 'Login' : 'Sign Up'}</Text>
@@ -53,6 +58,9 @@ const AuthScreen: React.FC<{ onAuthSuccess: () => void }> = ({ onAuthSuccess }) 
         <Text style={styles.switchText}>
           {isLogin ? "Don't have an account? Sign Up" : 'Already have an account? Login'}
         </Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.clearButton} onPress={handleClearCache}>
+        <Text style={styles.clearButtonText}>Clear Cache & Sign Out</Text>
       </TouchableOpacity>
     </View>
   );
@@ -103,6 +111,15 @@ const styles = StyleSheet.create({
     color: '#7A7672',
     fontSize: 15,
     marginTop: 8,
+    textDecorationLine: 'underline',
+  },
+  clearButton: {
+    marginTop: 20,
+    padding: 10,
+  },
+  clearButtonText: {
+    color: '#7A7672',
+    fontSize: 14,
     textDecorationLine: 'underline',
   },
 });

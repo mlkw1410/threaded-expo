@@ -100,23 +100,7 @@ const HomeScreen: React.FC = () => {
             </View>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
-            <View style={styles.activityList}>
-              <View style={styles.activityItem}>
-                <Text style={styles.activityText}>Added new shirt to closet</Text>
-                <Text style={styles.activityTime}>2 hours ago</Text>
-              </View>
-              <View style={styles.activityItem}>
-                <Text style={styles.activityText}>Created "Summer Vibes" outfit</Text>
-                <Text style={styles.activityTime}>Yesterday</Text>
-              </View>
-              <View style={styles.activityItem}>
-                <Text style={styles.activityText}>Shared outfit with friends</Text>
-                <Text style={styles.activityTime}>3 days ago</Text>
-              </View>
-            </View>
-          </View>
+          
         </View>
       </ScrollView>
     </SafeAreaView>
